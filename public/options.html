@@ -32,6 +32,24 @@
         <option value="NO">No</option>
       </select>
     </div>
+
+    <div id="time-limit-enabled-option" class="option">
+      <label>Daily time limit?</label>
+      <select id="time-limit-enabled">
+        <option value="YES">Yes</option>
+        <option value="NO">No</option>
+      </select>
+    </div>
+
+    <div id="time-limit-minutes-option" class="option">
+      <label>Daily limit (minutes):</label>
+      <input type="number" id="daily-time-limit" min="1" max="1440" value="30">
+    </div>
+
+    <div id="time-remaining-display" class="option">
+      <label>Time remaining today:</label>
+      <span id="time-remaining-value">--:--</span>
+    </div>
   </div>
 
   <div id="blocked-container">

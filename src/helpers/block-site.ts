@@ -1,16 +1,21 @@
-import storage from "../storage";
+import storage, { DailyTimeState } from "../storage";
 import findRule from "./find-rule";
 import * as counterHelper from "./counter";
 import getBlockedUrl from "./get-blocked-url";
+import { getTodayKey, ensureCurrentDay, isTimeExhausted } from "./time-limit";
 
 interface BlockSiteOptions {
   blocked: string[]
   tabId: number
   url: string
+  // Time limit options (optional for backward compatibility)
+  timeLimitEnabled?: boolean
+  dailyTimeLimitMinutes?: number
+  dailyTimeState?: DailyTimeState
 }
 
 export default (options: BlockSiteOptions) => {
-  const { blocked, tabId, url } = options;
+  const { blocked, tabId, url, timeLimitEnabled, dailyTimeLimitMinutes, dailyTimeState } = options;
   if (!blocked.length || !tabId || !url.startsWith("http")) {
     return;
   }
@@ -22,6 +27,24 @@ export default (options: BlockSiteOptions) => {
       storage.set({ counter });
     });
     return;
+  }
+
+  // Time limit mode: if enabled and time remains, allow access (don't block yet)
+  let dailyLimitExhausted = false;
+  if (timeLimitEnabled && dailyTimeLimitMinutes && dailyTimeState) {
+    const todayKey = getTodayKey();
+    const state = ensureCurrentDay(dailyTimeState, todayKey);
+
+    if (!isTimeExhausted(dailyTimeLimitMinutes, state)) {
+      // Time remains: allow access, tracking is handled by background
+      storage.get(["counter"]).then(({ counter }) => {
+        counterHelper.flushObsoleteEntries({ blocked, counter });
+        storage.set({ counter });
+      });
+      return;
+    }
+    // Time exhausted: fall through to block with dailyLimit reason
+    dailyLimitExhausted = true;
   }
 
   storage.get(["counter", "counterShow", "counterPeriod", "resolution"]).then(({ counter, counterShow, counterPeriod, resolution }) => {
@@ -44,6 +67,7 @@ export default (options: BlockSiteOptions) => {
           url,
           rule: foundRule.path,
           countParams: counterShow ? { count, period: counterPeriod } : undefined,
+          dailyLimitExhausted,
         }),
       };
 

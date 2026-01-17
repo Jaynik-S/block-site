@@ -1,6 +1,12 @@
 import storage, {
-  Schema, Resolution, CounterPeriod, RESOLUTIONS, BLOCKED_EXAMPLE,
+  Schema, Resolution, CounterPeriod, RESOLUTIONS, BLOCKED_EXAMPLE, DailyTimeState,
 } from "./storage";
+import {
+  getTodayKey,
+  ensureCurrentDay,
+  getRemainingMs,
+  formatRemainingTime,
+} from "./helpers/time-limit";
 
 const UI = (() => {
   const elements = {
@@ -10,7 +16,14 @@ const UI = (() => {
     resolution: document.getElementById("resolution") as HTMLSelectElement,
     counterShow: document.getElementById("counter-show") as HTMLSelectElement,
     counterPeriod: document.getElementById("counter-period") as HTMLSelectElement,
+    timeLimitEnabled: document.getElementById("time-limit-enabled") as HTMLSelectElement,
+    dailyTimeLimit: document.getElementById("daily-time-limit") as HTMLInputElement,
+    timeRemainingValue: document.getElementById("time-remaining-value") as HTMLSpanElement,
   };
+
+  let currentTimeState: DailyTimeState | null = null;
+  let currentTimeLimitMinutes: number = 30;
+  let updateIntervalId: number | null = null;
 
   elements.blockedList.placeholder = BLOCKED_EXAMPLE.join("\n");
 
@@ -50,6 +63,41 @@ const UI = (() => {
     storage.set({ counterPeriod });
   });
 
+  elements.timeLimitEnabled.addEventListener("change", (event) => {
+    const timeLimitEnabled = stringToBoolean(getEventTargetValue(event));
+    storage.set({ timeLimitEnabled });
+  });
+
+  elements.dailyTimeLimit.addEventListener("input", (event) => {
+    const value = parseInt((event.target as HTMLInputElement).value) || 30;
+    const dailyTimeLimitMinutes = Math.max(1, Math.min(1440, value));
+    storage.set({ dailyTimeLimitMinutes });
+  });
+
+  const updateTimeDisplay = () => {
+    if (!currentTimeState) return;
+
+    const todayKey = getTodayKey();
+    const state = ensureCurrentDay(currentTimeState, todayKey);
+    let remainingMs = getRemainingMs(currentTimeLimitMinutes, state);
+
+    // If there's an active session, subtract elapsed time
+    if (state.active) {
+      const elapsedMs = Date.now() - state.active.startedAtMs;
+      remainingMs = Math.max(0, remainingMs - elapsedMs);
+    }
+
+    elements.timeRemainingValue.textContent = formatRemainingTime(remainingMs);
+
+    // Update color based on remaining time
+    elements.timeRemainingValue.classList.remove("warning", "critical");
+    if (remainingMs <= 60 * 1000) {
+      elements.timeRemainingValue.classList.add("critical");
+    } else if (remainingMs <= 5 * 60 * 1000) {
+      elements.timeRemainingValue.classList.add("warning");
+    }
+  };
+
   const init = <T extends Partial<Schema>>(items: T) => {
     if (items.enabled !== undefined) {
       elements.enabled.value = booleanToString(items.enabled);
@@ -82,6 +130,26 @@ const UI = (() => {
     if (items.counterPeriod !== undefined) {
       elements.counterPeriod.value = items.counterPeriod;
     }
+
+    if (items.timeLimitEnabled !== undefined) {
+      elements.timeLimitEnabled.value = booleanToString(items.timeLimitEnabled);
+      document.body.classList.toggle("time-limit-enabled", items.timeLimitEnabled);
+    }
+
+    if (items.dailyTimeLimitMinutes !== undefined) {
+      elements.dailyTimeLimit.value = items.dailyTimeLimitMinutes.toString();
+      currentTimeLimitMinutes = items.dailyTimeLimitMinutes;
+    }
+
+    if (items.dailyTimeState !== undefined) {
+      currentTimeState = items.dailyTimeState;
+      updateTimeDisplay();
+
+      // Start interval for live updates if not already running
+      if (updateIntervalId === null) {
+        updateIntervalId = window.setInterval(updateTimeDisplay, 1000);
+      }
+    }
   };
 
   return { elements, init };
@@ -95,6 +163,9 @@ window.addEventListener("DOMContentLoaded", () => {
     "resolution",
     "counterShow",
     "counterPeriod",
+    "timeLimitEnabled",
+    "dailyTimeLimitMinutes",
+    "dailyTimeState",
   ];
 
   storage.get(keys).then((local) => {

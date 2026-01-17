@@ -106,6 +106,41 @@ fieldset {
   color: gold;
 }
 
+/* Daily time limit styles */
+body:not(.time-limit-enabled) #time-limit-minutes-option,
+body:not(.time-limit-enabled) #time-remaining-display {
+  display: none;
+}
+
+#daily-time-limit {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--input-background-color);
+  color: var(--text-color);
+  font-size: inherit;
+  padding: 3px 6px;
+  width: 80px;
+}
+
+#time-remaining-value {
+  font-family: monospace;
+  font-size: 1.1em;
+  font-weight: bold;
+  padding: 2px 8px;
+  background: #f5f5f5;
+  border-radius: var(--border-radius);
+}
+
+#time-remaining-value.warning {
+  color: #f57c00;
+  background: #fff3e0;
+}
+
+#time-remaining-value.critical {
+  color: #d32f2f;
+  background: #ffebee;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --border-color: #222;

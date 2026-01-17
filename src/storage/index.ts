@@ -16,6 +16,9 @@ const getAll = () => get([
   "counterShow",
   "counterPeriod",
   "resolution",
+  "timeLimitEnabled",
+  "dailyTimeLimitMinutes",
+  "dailyTimeState",
 ]);
 
 export default {

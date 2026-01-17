@@ -14,6 +14,53 @@
   color: white;
 }
 
+/* Daily limit section */
+#daily-limit-section {
+  text-align: center;
+  margin: 1.5em 0;
+  padding: 1em;
+  background: #fff3e0;
+  border-radius: var(--border-radius);
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#daily-limit-section.hidden {
+  display: none;
+}
+
+.limit-message {
+  margin: 0 0 1em 0;
+  color: #e65100;
+  font-weight: bold;
+}
+
+.grant-btn {
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.grant-btn:hover {
+  background: #1565c0;
+}
+
+.grant-btn:active {
+  background: #0d47a1;
+}
+
+.extra-info {
+  margin: 1em 0 0 0;
+  font-size: 12px;
+  color: #666;
+}
+
 @media (prefers-color-scheme: dark) {
   #url {
     background: #606060;
@@ -23,5 +70,17 @@
   #rule {
     filter: saturate(50%);
     color: #e8e8e8;
+  }
+
+  #daily-limit-section {
+    background: #3e2723;
+  }
+
+  .limit-message {
+    color: #ffcc80;
+  }
+
+  .extra-info {
+    color: #bdbdbd;
   }
 }
